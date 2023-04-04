@@ -1,6 +1,5 @@
 from libs.DataType import DataType
 from libs.System import System
-import re
 
 class Core:
     
