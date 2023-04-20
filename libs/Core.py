@@ -1,24 +1,31 @@
 from libs.DataType import DataType
 from libs.System import System
-
+from libs.Keyword import Keyword
+from libs.Operator import Operator
+from tkinter import scrolledtext, END
 class Core:
     
-    def tokenize(code: str) -> list:
-        
-        delimiters = [" ", "\t", "\n", "/", "(", ")", "{", "}", ";", ",", "+", ".*", "-", "*", "=", "<", ">", "&", "|", "?", ":", "%", "~", "^"]
+    def tokenize(code: str, txtbox: scrolledtext) -> list:
         tokens = []
-        current_token = ""
-
         
-        for character in code:
-            if character in delimiters:
-                if current_token:
-                    tokens.append(current_token)
-                    current_token = ""
-                if character.strip():
-                    tokens.append(character)
-            else:
-                current_token += character  
+        for line in code.split('\t'):
+            words = line.split()
+            kw = Keyword()
+            op = Operator()
+            for word in words:
+                txtbox.insert(END, word + '\n')
+                if kw.isKeyword(word) or DataType.isDataType(word):
+                    print('{dt} keyword'.format(dt=word))
+                elif op.isOperator(word):
+                    print('{op} operator'.format(op=word))
+                elif word.startswith("\"") and word.endswith("\"") and word.endswith(";"):
+                    print('{st} string'.format(st=word))
+                elif word.startswith("\'") and word.endswith("\'"):
+                    print('{ch} char'.format(ch=word))
+                else:
+                    print('{id} ID'.format(id=word))
+            
+        
     
         return tokens
     
@@ -28,7 +35,7 @@ class Core:
                     "if", "implements", "import", "instanceof", "int", "interface", "long", "native", "new", "package", "private", 
                     "protected", "public", "return", "short", "static", "strictfp", "super", "switch", "synchronized", "this", "throw", 
                     "throws", "transient", "try", "void", "volatile", "while"]
-        operators = ["=", "+", "-", "*", "/", "%", "<", ">", "<=", ">=", "==", "!=", "&&", "||", "!", "&", "|", "^", "~", "<<", ">>", ">>>", "+=", "-=", "*=", "/=", "%=", "<<=", ">>=", ">>>=", "&=", "^=", "|=", "++", "--", ".", ",", ";", "(", ")", "[", "]", "{", "}"]
+        
         
         result = []
         
@@ -37,11 +44,11 @@ class Core:
                 result.append(("KEYWORD", tk))
             elif tk.isdigit() or tk.isnumeric() or tk.isdecimal() or DataType.float(tk):
                 result.append(("NUMBER", tk))
-            elif tk in operators:
-                if tk == ";":
-                    result.append(("ENDL", tk))
-                else:
-                    result.append(("OPERATOR", tk))
+            # elif tk in operators:
+            #     if tk == ";":
+            #         result.append(("ENDL", tk))
+            #     else:
+            #         result.append(("OPERATOR", tk))
             elif DataType.isDataType(tk) or DataType.bool(tk) or DataType.float(tk):
                 result.append(("KEYWORD", tk))
             elif tk.startswith("\"") and tk.endswith("\""):

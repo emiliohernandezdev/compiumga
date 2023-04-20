@@ -2,24 +2,9 @@ import java.util.Scanner;
 
 public class Prueba {
   public static void main(String[] args) {
-    int suma = 10;
-    String palabra = "hola";
-    double d = 4.355453532;
-    float f = 4.7333434;
-    long l=12121;
-    char k = 'G';
-    byte b1 = 4;
-    boolean b = false;
-    ArrayList<String> arr = new ArrayList<String>();
-
-    int n1, n2 = 0;
-    n1 += 5;
-
-    double divi = 5 / 3;
-  }
-
-  public void saludar() {
-    String saludo = "javajavajavajava";
-    System.out.println(saludo);
+    String palabra = "hola_mundo";
   }
 }
+
+
+

@@ -4,6 +4,10 @@ from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import END, scrolledtext as st
 from libs.Core import Core
+from libs.Keyword import Keyword
+from libs.Operator import Operator
+from libs.DataType import DataType
+from views.SymbolTable import SymbolTableView
 
 class Analyzer:
     currentPath = ''
@@ -44,9 +48,9 @@ class Analyzer:
     
     def clenControls(self):
         
-        self.txt1.delete('1.0', END);
-        self.txt2.delete('1.0', END);
-        self.txt3.delete('1.0', END);
+        self.txt1.delete('1.0', END)
+        self.txt2.delete('1.0', END)
+        self.txt3.delete('1.0', END)
 
     def buildMenu(self):
 
@@ -149,45 +153,76 @@ class Analyzer:
     def businessProcess(self):
         self.txt2.delete(1.0, END)
         lines = self.txt1.get('1.0', END)
-    
-        #Llamar a la funcion para tokenizar
-        tokens = Core.tokenize(lines)
         
-        types = Core.getTokenTypes(tokens)
+        tokens = []
         
-        self.clasify(types)
+        kw = Keyword()
+        op = Operator()
         
-        
+        for line in lines.split('\n'):
+            i = 0
+            # line = line.strip()
+            while i < len(line):
+                char = line[i]
+                if char.isdigit():
+                    j = i + 1
+                    while j < len(line) and (line[j].isdigit() or line[j] == "."):
+                        j += 1
+                    token = line[i:j]
+                    self.txt2.insert(END, f'NUM({token})\n')
+                    i = j
+                elif char.isalpha() or char == "_":
+                    j = i + 1
+                    while j < len(line) and (line[j].isalnum() or line[j] == "_"):
+                        j += 1
+                    token = line[i:j]
+                    if kw.isKeyword(token): 
+                        self.txt2.insert(END, f'KW({token})\n') 
+                    elif DataType.isDataType(token):
+                        self.txt2.insert(END, f'TYPE({token})\n')
+                    elif token.startswith('"'):
+                        self.txt2.insert(END, f'STR({token})\n')
+                    elif DataType.bool(token):
+                        self.txt2.insert(END, f'BOOL({token})\n')
+                    else: 
+                        self.txt2.insert(END, f'ID({token})\n')
+                    i = j
+                elif char == '"':
+                    #proceso para validar strings
+                    j = i + 1
+                    while j < len(line) and (line[j].isalnum() or line[j] == '"' or line[j] == "_" or line[j].isspace()):
+                        j += 1
+                    token = line[i:j]
+                    self.txt2.insert(END, f'STR({token})\n')
+                    i = j
+                elif char == "'":
+                    #proceso para validar chars
+                    j = i + 1
+                    while j < len(line) and (line[j].isalnum() or line[j] == "'"):
+                        j += 1
+                    token = line[i:j]
+                    self.txt2.insert(END, f'CHAR({token})\n')
+                    i = j
+                elif char in ['+', '-', '*', '/', '%']:
+                    self.txt2.insert(END, f'ARITHOP({char})\n')
+                    i += 1
+                elif char in ['=', '>', '<', '!', '&', '|']:
+                    j = i + 2 if line[i+1] == '=' else i+ 1
+                    token = line[i:j]
+                    self.txt2.insert(END, f'LOGICOP({char})\n')
+                    i = j
+                elif char in [';', '(', ')', '{', '}', '[', ']', '.', ',']:
+                    self.txt2.insert(END, f'DELIM({char})\n')
+                    i += 1
+                elif char.isspace():
+                    i += 1
+                else:
+                    # No se encuentra token
+                    i+=1
          
     
     def exit(self):
         sys.exit()
         
-    
-    def clasify(self, types: list):
-        
-        for t in types:
-            match t[0]:
-                case "KEYWORD":
-                    self.txt2.insert(END, "KW({kw}) ".format(kw=t[1]))
-                case "ENDL":
-                    self.txt2.insert(END, "ENDL(;)\n\n")
-                case "IDENTIFIER":
-                    self.txt2.insert(END, "ID({id}) ".format(id=t[1]))
-                case "OPERATOR":
-                    if t[1] == "{" or t[1] == "}":
-                        self.txt2.insert(END, "OP({op})\n ".format(op=t[1]))
-                    else:
-                        self.txt2.insert(END, "OP({op}) ".format(op=t[1]))
-                case "NUMBER":
-                    self.txt2.insert(END, "NUM({n}) ".format(n=t[1]))
-                case "STRING":
-                    self.txt2.insert(END, "STR({s}) ".format(s=t[1]))
-                case "CHAR":
-                    self.txt2.insert(END, "CHAR({s}) ".format(s=t[1]))
-                case "SYSFN":
-                    self.txt2.insert(END, "SYSFN({s}) ".format(s=t[1]))
-                case "IMPORT":
-                    self.txt2.insert(END, "IMPORTPKG({i}) ".format(i=t[1]))
                     
 analyzer = Analyzer()
