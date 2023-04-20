@@ -3,13 +3,14 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import END, scrolledtext as st
+from PIL import ImageTk, Image
 from libs.Core import Core
 from libs.Keyword import Keyword
 from libs.Operator import Operator
 from libs.DataType import DataType
 from views.SymbolTable import SymbolTableView
-
-class Analyzer:
+from tkinter import *
+class Analyzer():
     currentPath = ''
     
     def __init__(self):
@@ -25,6 +26,7 @@ class Analyzer:
         self.clenControls()
         self.currentFile = None
         
+    def show(self):
         self.window.mainloop()
         
     def setTitle(self):
@@ -53,7 +55,7 @@ class Analyzer:
         self.txt3.delete('1.0', END)
 
     def buildMenu(self):
-
+        
         self.window.config(menu=self.menu)
         options = tk.Menu(self.menu, tearoff=0)
         execution = tk.Menu(self.menu, tearoff=0)
@@ -158,6 +160,7 @@ class Analyzer:
         
         kw = Keyword()
         op = Operator()
+        child = SymbolTableView()
         
         for line in lines.split('\n'):
             i = 0
@@ -219,10 +222,13 @@ class Analyzer:
                 else:
                     # No se encuentra token
                     i+=1
+        
          
     
     def exit(self):
         sys.exit()
         
                     
-analyzer = Analyzer()
+if __name__ == "__main__":
+    an = Analyzer()
+    an.show()
