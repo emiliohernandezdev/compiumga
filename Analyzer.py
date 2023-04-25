@@ -8,6 +8,8 @@ from libs.Core import Core
 from libs.Keyword import Keyword
 from libs.Operator import Operator
 from libs.DataType import DataType
+from libs.System import System
+from models.SymbolTableEntry import SymbolTableEntry
 from views.SymbolTable import SymbolTableView
 from tkinter import *
 class Analyzer():
@@ -155,16 +157,15 @@ class Analyzer():
     def businessProcess(self):
         self.txt2.delete(1.0, END)
         lines = self.txt1.get('1.0', END)
-        
-        tokens = []
-        
+
         kw = Keyword()
         op = Operator()
         child = SymbolTableView()
         
         for line in lines.split('\n'):
+            ste = SymbolTableEntry()
             i = 0
-            # line = line.strip()
+            line = line.strip()
             while i < len(line):
                 char = line[i]
                 if char.isdigit():
@@ -173,14 +174,16 @@ class Analyzer():
                         j += 1
                     token = line[i:j]
                     self.txt2.insert(END, f'NUM({token})\n')
+                    ste.setInitValue(token)
                     i = j
                 elif char.isalpha() or char == "_":
                     j = i + 1
                     while j < len(line) and (line[j].isalnum() or line[j] == "_"):
                         j += 1
                     token = line[i:j]
+                    
                     if kw.isKeyword(token): 
-                        self.txt2.insert(END, f'KW({token})\n') 
+                        self.txt2.insert(END, f'KW({token})\n')
                     elif DataType.isDataType(token):
                         self.txt2.insert(END, f'TYPE({token})\n')
                     elif token.startswith('"'):
@@ -189,7 +192,9 @@ class Analyzer():
                         self.txt2.insert(END, f'BOOL({token})\n')
                     else: 
                         self.txt2.insert(END, f'ID({token})\n')
+                        
                     i = j
+                    
                 elif char == '"':
                     #proceso para validar strings
                     j = i + 1
@@ -197,6 +202,7 @@ class Analyzer():
                         j += 1
                     token = line[i:j]
                     self.txt2.insert(END, f'STR({token})\n')
+                    ste.setInitValue(token)
                     i = j
                 elif char == "'":
                     #proceso para validar chars
@@ -205,6 +211,7 @@ class Analyzer():
                         j += 1
                     token = line[i:j]
                     self.txt2.insert(END, f'CHAR({token})\n')
+                    ste.setInitValue(token)
                     i = j
                 elif char in ['+', '-', '*', '/', '%']:
                     self.txt2.insert(END, f'ARITHOP({char})\n')
@@ -222,8 +229,16 @@ class Analyzer():
                 else:
                     # No se encuentra token
                     i+=1
+            self.getNameTypeAndScope(token, line, ste)
+            child.insertEntry(ste)
+                    
+    def getNameTypeAndScope(self, token:str, line: str, ste: SymbolTableEntry):
+        lnArr = line.split()
+        print(lnArr)
+        #[nivel de acceso] [directva] [tipo] [nombre]
         
-         
+                
+            
     
     def exit(self):
         sys.exit()

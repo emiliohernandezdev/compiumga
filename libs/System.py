@@ -1,7 +1,9 @@
 class System:
     
-    def isJavaImport(t: str) -> bool:
-        return t.startswith("java.")
+    def isScope(s: str):
+        return s in ["public", "private", "protected"];
+
+    def isDirective(s: str):
+        return s in ["readonly", "static", "final"]
     
-    def isSystemFunction(s: str) -> bool:
-        return s.startswith("System.")
+    
