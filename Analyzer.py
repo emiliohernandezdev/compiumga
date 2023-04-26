@@ -156,7 +156,7 @@ class Analyzer():
                 
     def businessProcess(self):
         self.txt2.delete(1.0, END)
-        lines = self.txt1.get('1.0', END)
+        lines = self.txt1.get('1.0', END).strip()
 
         kw = Keyword()
         op = Operator()
@@ -186,6 +186,7 @@ class Analyzer():
                         self.txt2.insert(END, f'KW({token})\n')
                     elif DataType.isDataType(token):
                         self.txt2.insert(END, f'TYPE({token})\n')
+                        ste.setType(token)
                     elif token.startswith('"'):
                         self.txt2.insert(END, f'STR({token})\n')
                     elif DataType.bool(token):
@@ -229,13 +230,46 @@ class Analyzer():
                 else:
                     # No se encuentra token
                     i+=1
-            self.getNameTypeAndScope(token, line, ste)
-            child.insertEntry(ste)
                     
-    def getNameTypeAndScope(self, token:str, line: str, ste: SymbolTableEntry):
-        lnArr = line.split()
-        print(lnArr)
-        #[nivel de acceso] [directva] [tipo] [nombre]
+            if line: 
+                self.getNameTypeAndScope(line, ste)
+                child.insertEntry(ste)
+                    
+    def getNameTypeAndScope(self, line: str, ste: SymbolTableEntry):
+        if line:
+            lnArr = line.strip().split()
+            typeOrScope = lnArr[0]
+            #si viene nivel de acceso
+            if System.isScope(typeOrScope):
+                match typeOrScope:
+                    case 'public':
+                        ste.setScope('0')
+                    case 'private':
+                        ste.setScope('1')
+                    case 'protected':
+                        ste.setScope('2')
+                    case _:
+                        ste.setScope('0')
+                nextToken = lnArr[1]
+                if DataType.isDataType(nextToken) or nextToken == "void":
+                    nextToken = lnArr[2]
+                    if System.isFunction(nextToken):
+                        ste.setType('function')
+                        ste.setName(nextToken[0:nextToken.index(")") + 1])
+                    else:
+                        ste.setType(lnArr[1])
+                        ste.setName(lnArr[2])
+                elif System.isDirective(nextToken):
+                    print(lnArr)
+                    ste.setName(lnArr[4])
+            #si viene tipo de dato
+            elif DataType.isDataType(typeOrScope):
+                ste.setScope('0')
+                ste.setType(typeOrScope)
+                ste.setName(lnArr[1])
+            else:
+                print('')
+        
         
                 
             
