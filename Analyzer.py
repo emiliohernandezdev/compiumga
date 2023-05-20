@@ -183,14 +183,15 @@ class Analyzer():
                         val = int(token)
                         ste.setInitValue(val)
                     except:
-                        try: 
+                        try:
                             val = float(token)
                             ste.setInitValue(val)
                         except:
-                            ste.setInitValue('----------')
-                            self.txt3.insert(END, f"ERROR: Numero '{token}' no valido. Linea {numberLine}")
+                            self.txt3.insert(END, f"ERROR: Numero '{token}' no valido. Linea {numberLine}\n")
+                    finally: 
+                        ste.setInitValue(val)
                     i = j
-                elif char.isalpha() or char.isalnum() or char in string.punctuation:
+                elif char.isalpha() or char.isalnum() or char in string.punctuation and char not in ['"', "'"]:
                     j = i + 1
                     while j < len(line) and (line[j].isalnum() or line[j] == "_" ):
                         j += 1
@@ -198,6 +199,8 @@ class Analyzer():
                     
                     if kw.isKeyword(token): 
                         self.txt2.insert(END, f'KW({token})\n')
+                        if DataType.isDataType(token):
+                            ste.setType(token)
                     elif DataType.isDataType(token):
                         self.txt2.insert(END, f'TYPE({token})\n')
                         ste.setType(token)
@@ -209,11 +212,12 @@ class Analyzer():
                     elif token.isidentifier():
                         if token not in self.variables:
                             self.txt2.insert(END, f'ID({token})\n')
+                            ste.setName(token)
                             lnSplt = line.split()
                             if System.isScope(lnSplt[0]) or DataType.isDataType(lnSplt[0]):
                                 self.variables.append(token)
                         else:
-                            self.txt3.insert(END, f"ERROR: Identificador '{token}' duplicado. Linea {numberLine}")
+                            self.txt3.insert(END, f"ERROR: Identificador '{token}' duplicado. Linea {numberLine}\n")
                     elif op.validateOperator(char):
                         opType = op.getType(char)
                         match opType:
@@ -229,7 +233,7 @@ class Analyzer():
                                 self.txt2.insert(END, f'DELIM({char})\n')
                                 i += 1
                     else:
-                        self.txt3.insert(END, f"ERROR: Identificador '{token}' no valido. Linea {numberLine}")
+                        self.txt3.insert(END, f"ERROR: Identificador '{token}' no valido. Linea {numberLine}\n")
                     i = j
                     
                 elif char == '"':
@@ -258,11 +262,11 @@ class Analyzer():
                     i+=1
                     
             if line:
-                self.getNameTypeAndScope(line, ste)
+                self.getNameTypeAndScope(line, numberLine, ste)
                 child.insertEntry(ste)
                 
                     
-    def getNameTypeAndScope(self, line: str, ste: SymbolTableEntry):
+    def getNameTypeAndScope(self, line: str, lnNumber: int, ste: SymbolTableEntry):
         if line:
             lnArr = line.strip().split()
             typeOrScope = lnArr[0]
@@ -286,8 +290,12 @@ class Analyzer():
                         ste.setType('function')
                         ste.setName(nextToken[0:nextToken.index(")") + 1])
                     else:
-                        ste.setType(lnArr[1])
-                        ste.setName(lnArr[2])
+                        validation = self.validateTypeAndValue(lnArr[1], ste.getInitValue())
+                        if validation == True:
+                            ste.setType(lnArr[1])
+                            ste.setName(lnArr[2])
+                        else:
+                            self.txt3.insert(END, f"ERROR: El valor asignado no es del tipo de la variable '{ste.getName()}', esperaba un tipo: '{ste.getType()}'. Linea {lnNumber}\n")
                 elif System.isDirective(nextToken):
                     ste.setName(lnArr[4])
                 elif kw.isKeyword(nextToken) and nextToken == "class":
@@ -307,18 +315,45 @@ class Analyzer():
             #si viene tipo de dato
             elif DataType.isDataType(typeOrScope):
                 ste.setScope('0')
-                ste.setType(typeOrScope)
-                ste.setName(lnArr[1])
+                validation = self.validateTypeAndValue(typeOrScope, ste.getInitValue())
+                if validation == True:
+                    ste.setType(typeOrScope)
+                    ste.setName(lnArr[1])
+                else:
+                    self.txt3.insert(END, f"ERROR: El valor asignado no es del tipo de la variable '{ste.getName()}', esperaba un tipo: '{ste.getType()}'. Linea {lnNumber}\n")
+            elif typeOrScope in string.punctuation:
+                pass
             else:
                 if typeOrScope in self.variables:
                     ste.setName(typeOrScope)
                     print(lnArr)
                     # ste.setInitValue()
-                print(f'en else: {typeOrScope}')
+                self.txt3.insert(END, f"ERROR: Caracter ilegal {typeOrScope} en la linea {lnNumber}\n")
         
         
-                
-            
+    def validateTypeAndValue(self, type: str, value: str):
+        match type:
+            case 'int':
+                if isinstance(value, int): return True
+                else: return False
+            case 'float':
+                if isinstance(value, float): return True
+                else: return False
+            case 'double':
+                if isinstance(value, float): return True
+                else: return False
+            case 'String':
+                if isinstance(value, str): return True
+                else: return False
+            case 'char':
+                if isinstance(value, str): return True
+                else: return False
+            case 'boolean':
+                if DataType.bool(value): return True
+                else: return False
+            case 'byte':
+                if isinstance(value, int): return True
+                else: return False
     
     def exit(self):
         sys.exit()
