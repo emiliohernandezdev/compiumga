@@ -210,14 +210,21 @@ class Analyzer():
                         self.txt2.insert(END, f'BOOL({token})\n')
                         ste.setInitValue(token)
                     elif token.isidentifier():
-                        if token not in self.variables:
-                            self.txt2.insert(END, f'ID({token})\n')
-                            ste.setName(token)
-                            lnSplt = line.split()
-                            if System.isScope(lnSplt[0]) or DataType.isDataType(lnSplt[0]):
+                        lnSplt = line.split()
+                        if System.isScope(lnSplt[0]) or DataType.isDataType(lnSplt[0]):
+                            if token not in self.variables:
+                                self.txt2.insert(END, f'ID({token})\n')
+                                ste.setName(token)
+                                print(f'se inserto: {token}')
                                 self.variables.append(token)
+                            else:
+                                self.txt3.insert(END, f"ERROR: Identificador de variable '{token}' duplicado. Linea {numberLine}\n")
                         else:
-                            self.txt3.insert(END, f"ERROR: Identificador '{token}' duplicado. Linea {numberLine}\n")
+                            if lnSplt[0] not in self.variables:
+                                self.txt3.insert(END, f"ERROR: Referencia a objeto '{token}' no declarado. Linea {numberLine}\n")
+                            else:
+                                ste.setName(lnSplt[0])
+                                print('referencia a objeto')
                     elif op.validateOperator(char):
                         opType = op.getType(char)
                         match opType:
@@ -323,7 +330,7 @@ class Analyzer():
                     self.txt3.insert(END, f"ERROR: El valor asignado no es del tipo de la variable '{ste.getName()}', esperaba un tipo: '{ste.getType()}'. Linea {lnNumber}\n")
             elif typeOrScope in string.punctuation:
                 pass
-            else:
+            elif not typeOrScope.isalnum():
                 if typeOrScope in self.variables:
                     ste.setName(typeOrScope)
                     print(lnArr)
