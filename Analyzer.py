@@ -215,7 +215,6 @@ class Analyzer():
                             if token not in self.variables:
                                 self.txt2.insert(END, f'ID({token})\n')
                                 ste.setName(token)
-                                print(f'se inserto: {token}')
                                 self.variables.append(token)
                             else:
                                 self.txt3.insert(END, f"ERROR: Identificador de variable '{token}' duplicado. Linea {numberLine}\n")
@@ -224,7 +223,6 @@ class Analyzer():
                                 self.txt3.insert(END, f"ERROR: Referencia a objeto '{token}' no declarado. Linea {numberLine}\n")
                             else:
                                 ste.setName(lnSplt[0])
-                                print('referencia a objeto')
                     elif op.validateOperator(char):
                         opType = op.getType(char)
                         match opType:
@@ -333,7 +331,6 @@ class Analyzer():
             elif not typeOrScope.isalnum():
                 if typeOrScope in self.variables:
                     ste.setName(typeOrScope)
-                    print(lnArr)
                     # ste.setInitValue()
                 self.txt3.insert(END, f"ERROR: Caracter ilegal {typeOrScope} en la linea {lnNumber}\n")
         
