@@ -3,7 +3,6 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 from tkinter import END, scrolledtext as st
-from PIL import ImageTk, Image
 from libs.Core import Core
 from libs.Keyword import Keyword
 from libs.Operator import Operator
@@ -12,6 +11,7 @@ from libs.System import System
 from models.SymbolTableEntry import SymbolTableEntry
 from views.SymbolTable import SymbolTableView
 from tkinter import *
+import string
 class Analyzer():
     currentPath = ''
     
@@ -43,7 +43,7 @@ class Analyzer():
 
         self.txt1 = st.ScrolledText(self.window, width=45, height=25)
         self.txt1.grid(column=0, row=0, padx=5, pady=5)
-        self.txt1.delete('1.0', END);
+        self.txt1.delete('1.0', END)
 
         self.txt2 = st.ScrolledText(self.window, width=90, height=25)
         self.txt2.grid(column=1, row=0, padx=5, pady=5)
@@ -164,31 +164,35 @@ class Analyzer():
         kw = Keyword()
         op = Operator()
         child = SymbolTableView()
-        
+        self.variables = []
+
         for numberLine, line in enumerate(lines.split('\n'), 1):
             ste = SymbolTableEntry()
             i = 0
             line = line.strip()
-            
             # self.validateLine(line)
             while i < len(line):
                 char = line[i]
                 if char.isdigit():
                     j = i + 1
-                    while j < len(line) and (line[j].isdigit() or line[j] == "."):
+                    while j < len(line) and (line[j].isdigit() or line[j].isnumeric() or line[j] == "."):
                         j += 1
                     token = line[i:j]
                     self.txt2.insert(END, f'NUM({token})\n')
                     try:
                         val = int(token)
                         ste.setInitValue(val)
-                    except: 
-                        val = float(token)
-                        ste.setInitValue(val)
+                    except:
+                        try: 
+                            val = float(token)
+                            ste.setInitValue(val)
+                        except:
+                            ste.setInitValue('----------')
+                            self.txt3.insert(END, f"ERROR: Numero '{token}' no valido. Linea {numberLine}")
                     i = j
-                elif char.isalpha() or char == "_":
+                elif char.isalpha() or char.isalnum() or char in string.punctuation:
                     j = i + 1
-                    while j < len(line) and (line[j].isalnum() or line[j] == "_"):
+                    while j < len(line) and (line[j].isalnum() or line[j] == "_" ):
                         j += 1
                     token = line[i:j]
                     
@@ -202,16 +206,36 @@ class Analyzer():
                     elif DataType.bool(token):
                         self.txt2.insert(END, f'BOOL({token})\n')
                         ste.setInitValue(token)
-                    else:
-                        if System.isScope(line[0]) or DataType.isDataType(line[0]):
+                    elif token.isidentifier():
+                        if token not in self.variables:
                             self.txt2.insert(END, f'ID({token})\n')
-                            self.variables.append(token)
+                            lnSplt = line.split()
+                            if System.isScope(lnSplt[0]) or DataType.isDataType(lnSplt[0]):
+                                self.variables.append(token)
+                        else:
+                            self.txt3.insert(END, f"ERROR: Identificador '{token}' duplicado. Linea {numberLine}")
+                    elif op.validateOperator(char):
+                        opType = op.getType(char)
+                        match opType:
+                            case 'arithmetic':
+                                self.txt2.insert(END, f'ARITHOP({char})\n')
+                                i += 1
+                            case 'logic':
+                                j = i + 2 if line[i+1] == '=' else i+ 1
+                                token = line[i:j]
+                                self.txt2.insert(END, f'LOGICOP({char})\n')
+                                i = j
+                            case 'delimiter':
+                                self.txt2.insert(END, f'DELIM({char})\n')
+                                i += 1
+                    else:
+                        self.txt3.insert(END, f"ERROR: Identificador '{token}' no valido. Linea {numberLine}")
                     i = j
                     
                 elif char == '"':
                     #proceso para validar strings
                     j = i + 1
-                    while j < len(line) and (line[j].isalnum() or line[j] == '"' or line[j] == "_" or line[j].isspace()):
+                    while j < len(line) and (line[j].isalnum() or line[j] == '"' or line[j] == "_" or line[j].isspace() or not line[j] in string.punctuation):
                         j += 1
                     token = line[i:j]
                     self.txt2.insert(END, f'STR({token})\n')
@@ -226,20 +250,7 @@ class Analyzer():
                     self.txt2.insert(END, f'CHAR({token})\n')
                     ste.setInitValue(token)
                     i = j
-                elif op.validateOperator(char):
-                    opType = op.getType(char)
-                    match opType:
-                        case 'arithmetic':
-                            self.txt2.insert(END, f'ARITHOP({char})\n')
-                            i += 1
-                        case 'logic':
-                            j = i + 2 if line[i+1] == '=' else i+ 1
-                            token = line[i:j]
-                            self.txt2.insert(END, f'LOGICOP({char})\n')
-                            i = j
-                        case 'delimiter':
-                            self.txt2.insert(END, f'DELIM({char})\n')
-                            i += 1
+                
                 elif char.isspace():
                     i += 1
                 else:
@@ -247,35 +258,8 @@ class Analyzer():
                     i+=1
                     
             if line:
-                valid = self.validateLine(line, numberLine, ste)
-                if valid:
-                    self.getNameTypeAndScope(line, ste)
-                    child.insertEntry(ste)
-
-    def validateLine(self, line: str, lnNum: int, entry: SymbolTableEntry) -> bool:
-        lnSplit = line.split()
-        print(entry.getInitValue())
-        print(type(entry.getInitValue()))
-        
-        typeOrScope = lnSplit[0]
-        if System.isScope(typeOrScope):
-            #formato: [nivelAcceso] [tipo] [identificador]
-            
-            #aux para obtener el tipo
-            aux = lnSplit[1]
-            
-        elif DataType.isDataType(typeOrScope):
-            identifier = lnSplit[1]
-            return True
-        else:
-            identifier = lnSplit[0]
-            if not (identifier in self.variables):
-                self.txt3.insert(END, f"> ERROR: Se referencia al objeto: '{identifier}' no declarado. Linea: {lnNum}\n")
-                return False
-        
-    def validateTypeAndValue(self, type: str, value: str) -> bool:
-        
-        return True
+                self.getNameTypeAndScope(line, ste)
+                child.insertEntry(ste)
                 
                     
     def getNameTypeAndScope(self, line: str, ste: SymbolTableEntry):
@@ -301,9 +285,6 @@ class Analyzer():
                     if System.isFunction(nextToken):
                         ste.setType('function')
                         ste.setName(nextToken[0:nextToken.index(")") + 1])
-                        print(line[-1])
-                        # if not line[-2] == "{}":
-                        #     self.txt3.insert(END, 'Error, función no cerrada')
                     else:
                         ste.setType(lnArr[1])
                         ste.setName(lnArr[2])
@@ -328,6 +309,12 @@ class Analyzer():
                 ste.setScope('0')
                 ste.setType(typeOrScope)
                 ste.setName(lnArr[1])
+            else:
+                if typeOrScope in self.variables:
+                    ste.setName(typeOrScope)
+                    print(lnArr)
+                    # ste.setInitValue()
+                print(f'en else: {typeOrScope}')
         
         
                 
