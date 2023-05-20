@@ -47,6 +47,8 @@ class SymbolTableView(tk.Toplevel):
         for child in self.tbl.get_children():
             print(child)
             
+    def removeEntry(self):
+        self.tbl.delete()
         
     def addToSymbolTable(self,type: str):
         self.tbl.insert(END, type)

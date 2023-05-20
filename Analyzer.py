@@ -27,6 +27,7 @@ class Analyzer():
         self.buildGrid()
         self.clenControls()
         self.currentFile = None
+        self.ids = list()
         
     def show(self):
         self.window.mainloop()
@@ -152,20 +153,24 @@ class Analyzer():
             except Exception as e:
                 self.cleanFileAndPath()
                 messagebox.showerror("Error al guardar el archivo", str(e))
-                
+
+    variables = []                
                 
     def businessProcess(self):
         self.txt2.delete(1.0, END)
+        self.txt3.delete(1.0, END)
         lines = self.txt1.get('1.0', END).strip()
 
         kw = Keyword()
         op = Operator()
         child = SymbolTableView()
         
-        for line in lines.split('\n'):
+        for numberLine, line in enumerate(lines.split('\n'), 1):
             ste = SymbolTableEntry()
             i = 0
             line = line.strip()
+            
+            # self.validateLine(line)
             while i < len(line):
                 char = line[i]
                 if char.isdigit():
@@ -174,7 +179,12 @@ class Analyzer():
                         j += 1
                     token = line[i:j]
                     self.txt2.insert(END, f'NUM({token})\n')
-                    ste.setInitValue(token)
+                    try:
+                        val = int(token)
+                        ste.setInitValue(val)
+                    except: 
+                        val = float(token)
+                        ste.setInitValue(val)
                     i = j
                 elif char.isalpha() or char == "_":
                     j = i + 1
@@ -191,9 +201,11 @@ class Analyzer():
                         self.txt2.insert(END, f'STR({token})\n')
                     elif DataType.bool(token):
                         self.txt2.insert(END, f'BOOL({token})\n')
-                    else: 
-                        self.txt2.insert(END, f'ID({token})\n')
-                        
+                        ste.setInitValue(token)
+                    else:
+                        if System.isScope(line[0]) or DataType.isDataType(line[0]):
+                            self.txt2.insert(END, f'ID({token})\n')
+                            self.variables.append(token)
                     i = j
                     
                 elif char == '"':
@@ -214,32 +226,65 @@ class Analyzer():
                     self.txt2.insert(END, f'CHAR({token})\n')
                     ste.setInitValue(token)
                     i = j
-                elif char in ['+', '-', '*', '/', '%']:
-                    self.txt2.insert(END, f'ARITHOP({char})\n')
-                    i += 1
-                elif char in ['=', '>', '<', '!', '&', '|']:
-                    j = i + 2 if line[i+1] == '=' else i+ 1
-                    token = line[i:j]
-                    self.txt2.insert(END, f'LOGICOP({char})\n')
-                    i = j
-                elif char in [';', '(', ')', '{', '}', '[', ']', '.', ',']:
-                    self.txt2.insert(END, f'DELIM({char})\n')
-                    i += 1
+                elif op.validateOperator(char):
+                    opType = op.getType(char)
+                    match opType:
+                        case 'arithmetic':
+                            self.txt2.insert(END, f'ARITHOP({char})\n')
+                            i += 1
+                        case 'logic':
+                            j = i + 2 if line[i+1] == '=' else i+ 1
+                            token = line[i:j]
+                            self.txt2.insert(END, f'LOGICOP({char})\n')
+                            i = j
+                        case 'delimiter':
+                            self.txt2.insert(END, f'DELIM({char})\n')
+                            i += 1
                 elif char.isspace():
                     i += 1
                 else:
                     # No se encuentra token
                     i+=1
                     
-            if line: 
-                self.getNameTypeAndScope(line, ste)
-                child.insertEntry(ste)
+            if line:
+                valid = self.validateLine(line, numberLine, ste)
+                if valid:
+                    self.getNameTypeAndScope(line, ste)
+                    child.insertEntry(ste)
+
+    def validateLine(self, line: str, lnNum: int, entry: SymbolTableEntry) -> bool:
+        lnSplit = line.split()
+        print(entry.getInitValue())
+        print(type(entry.getInitValue()))
+        
+        typeOrScope = lnSplit[0]
+        if System.isScope(typeOrScope):
+            #formato: [nivelAcceso] [tipo] [identificador]
+            
+            #aux para obtener el tipo
+            aux = lnSplit[1]
+            
+        elif DataType.isDataType(typeOrScope):
+            identifier = lnSplit[1]
+            return True
+        else:
+            identifier = lnSplit[0]
+            if not (identifier in self.variables):
+                self.txt3.insert(END, f"> ERROR: Se referencia al objeto: '{identifier}' no declarado. Linea: {lnNum}\n")
+                return False
+        
+    def validateTypeAndValue(self, type: str, value: str) -> bool:
+        
+        return True
+                
                     
     def getNameTypeAndScope(self, line: str, ste: SymbolTableEntry):
         if line:
             lnArr = line.strip().split()
             typeOrScope = lnArr[0]
+            kw = Keyword()
             #si viene nivel de acceso
+            
             if System.isScope(typeOrScope):
                 match typeOrScope:
                     case 'public':
@@ -252,23 +297,37 @@ class Analyzer():
                         ste.setScope('0')
                 nextToken = lnArr[1]
                 if DataType.isDataType(nextToken) or nextToken == "void":
-                    nextToken = lnArr[2]
+                    nextToken = lnArr[2].strip()
                     if System.isFunction(nextToken):
                         ste.setType('function')
                         ste.setName(nextToken[0:nextToken.index(")") + 1])
+                        print(line[-1])
+                        # if not line[-2] == "{}":
+                        #     self.txt3.insert(END, 'Error, función no cerrada')
                     else:
                         ste.setType(lnArr[1])
                         ste.setName(lnArr[2])
                 elif System.isDirective(nextToken):
-                    print(lnArr)
                     ste.setName(lnArr[4])
+                elif kw.isKeyword(nextToken) and nextToken == "class":
+                    ste.setType(nextToken)
+                    if "{" in lnArr[2]:
+                        name = lnArr[2]
+                        ste.setName(name[0:name.index("{")])
+                    else:
+                        try:
+                            name = lnArr[2]
+                            delims = lnArr[3]
+                            
+                            if "{}" not in name:
+                                ste.setName(name)
+                        except:
+                            return None
             #si viene tipo de dato
             elif DataType.isDataType(typeOrScope):
                 ste.setScope('0')
                 ste.setType(typeOrScope)
                 ste.setName(lnArr[1])
-            else:
-                print('')
         
         
                 

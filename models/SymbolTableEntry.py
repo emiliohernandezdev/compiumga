@@ -29,4 +29,3 @@ class SymbolTableEntry:
     
     def setScope(self, scope):
         self.scope = scope
-    

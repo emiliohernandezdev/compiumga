@@ -30,7 +30,7 @@ class DataType:
             return False
         
     def bool(b: str) -> bool:
-        if b in ["true", "false"]:
+        if b.lower() in ["true", "false"]:
             convert = b[0].upper()
             final = convert + b[1:]
             try:

@@ -1,10 +1,25 @@
-import java.util.Scanner;
+public class MiClase{
+    public void main(){
+        public int cont = 0;
+        private String saludo = "hola compi";
+        public float f = 12.56;
+        public char c = 'K';
+        public byte bt = 127;
 
-public class Prueba {
-  public static void main(String[] args) {
-    String palabra = "hola_mundo";
-  }
+        int nx = 24;
+
+        double precio = 12.50;
+
+        protected int numero = 250;
+
+        public boolean verdad = false;
+
+        public int suma(){}
+
+        public String getName(){}
+
+        public float getPrecio(){}
+
+        public byte obtenerUnByte(){}
+    }   
 }
-
-
-
