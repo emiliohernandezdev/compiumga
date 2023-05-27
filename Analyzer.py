@@ -173,7 +173,8 @@ class Analyzer():
             # self.validateLine(line)
             while i < len(line):
                 char = line[i]
-                if char.isdigit():
+                print()
+                if char.isnumeric():
                     j = i + 1
                     while j < len(line) and (line[j].isdigit() or line[j].isnumeric() or line[j] == "."):
                         j += 1
@@ -209,10 +210,10 @@ class Analyzer():
                     elif DataType.bool(token):
                         self.txt2.insert(END, f'BOOL({token})\n')
                         ste.setInitValue(token)
-                    elif token.isidentifier():
+                    elif token.isalnum():
                         lnSplt = line.split()
                         if System.isScope(lnSplt[0]) or DataType.isDataType(lnSplt[0]):
-                            if token not in self.variables:
+                            if token not in self.variables and token.isidentifier():
                                 self.txt2.insert(END, f'ID({token})\n')
                                 ste.setName(token)
                                 self.variables.append(token)
@@ -247,8 +248,11 @@ class Analyzer():
                     while j < len(line) and (line[j].isalnum() or line[j] == '"' or line[j] == "_" or line[j].isspace() or not line[j] in string.punctuation):
                         j += 1
                     token = line[i:j]
-                    self.txt2.insert(END, f'STR({token})\n')
-                    ste.setInitValue(token)
+                    if not token.endswith('"'):
+                        self.txt3.insert(END, f"ERROR: String no cerrado. Linea {numberLine}\n")
+                    else:
+                        self.txt2.insert(END, f'STR({token})\n')
+                        ste.setInitValue(token)
                     i = j
                 elif char == "'":
                     #proceso para validar chars
@@ -256,8 +260,11 @@ class Analyzer():
                     while j < len(line) and (line[j].isalnum() or line[j] == "'"):
                         j += 1
                     token = line[i:j]
-                    self.txt2.insert(END, f'CHAR({token})\n')
-                    ste.setInitValue(token)
+                    if not token.endswith("'"):
+                        self.txt3.insert(END, f"ERROR: Char no cerrado. Linea {numberLine}\n")
+                    else:
+                        self.txt2.insert(END, f'CHAR({token})\n')
+                        ste.setInitValue(token)
                     i = j
                 
                 elif char.isspace():
@@ -300,7 +307,7 @@ class Analyzer():
                             ste.setType(lnArr[1])
                             ste.setName(lnArr[2])
                         else:
-                            self.txt3.insert(END, f"ERROR: El valor asignado no es del tipo de la variable '{ste.getName()}', esperaba un tipo: '{ste.getType()}'. Linea {lnNumber}\n")
+                            self.txt3.insert(END, f"ERROR: El valor asignado no es del tipo de la variable, esperaba un tipo: '{ste.getType()}'. Linea {lnNumber}\n")
                 elif System.isDirective(nextToken):
                     ste.setName(lnArr[4])
                 elif kw.isKeyword(nextToken) and nextToken == "class":
@@ -325,7 +332,7 @@ class Analyzer():
                     ste.setType(typeOrScope)
                     ste.setName(lnArr[1])
                 else:
-                    self.txt3.insert(END, f"ERROR: El valor asignado no es del tipo de la variable '{ste.getName()}', esperaba un tipo: '{ste.getType()}'. Linea {lnNumber}\n")
+                    self.txt3.insert(END, f"ERROR: El valor asignado no es del tipo de la variable, esperaba un tipo: '{ste.getType()}'. Linea {lnNumber}\n")
             elif typeOrScope in string.punctuation:
                 pass
             elif not typeOrScope.isalnum():
